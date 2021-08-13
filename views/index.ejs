@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel='stylesheet' href='/stylesheets/bootstrap.min.css' />
+  </head>
+  <body>
+    <div class="container">
+      <h1><%= title %></h1>
+      <p>Select CSV file for upload.</p>
+      <form action="/" enctype="multipart/form-data" method="post">
+        <div class="input-group">
+          <input type="file" name="upload" class="form-control" id="inputGroupFile04" aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+          <button class="btn btn-outline-secondary" type="submit" value="Upload" id="inputGroupFileAddon04">Submit</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
