@@ -26,8 +26,13 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'TimeCard Parser' });
 
   // Cleanup Policies
-  cleanUpDir(__dirname + '/uploads/')
-  cleanUpDir(__dirname + '/downloads/')
+  if (fs.existsSync(__dirname + '/uploads/')) {
+    cleanUpDir(__dirname + '/uploads/')
+  }
+
+  if (fs.existsSync(__dirname + '/downloads/')) {
+    cleanUpDir(__dirname + '/downloads/')
+  }  
 });
 
 router.post('/', function (req, res, next){
@@ -35,6 +40,10 @@ router.post('/', function (req, res, next){
     form.parse(req);
     // Set path to upload file
     form.on('fileBegin', function (name, file){
+        if (!(fs.existsSync(__dirname + '/uploads/'))) {
+          // Create directory
+          fs.mkdirSync(__dirname + '/uploads/', { recursive: true });
+        }
         file.path = __dirname + '/uploads/' + file.name
     });
     // Once its uploaded completely, call to python csv parser
@@ -54,6 +63,10 @@ router.post('/', function (req, res, next){
             if (err) throw err;
             // result is an array consisting of messages collected 
             //during execution of script.
+            if (!(fs.existsSync(__dirname + '/downloads/'))) {
+              // Create directory
+              fs.mkdirSync(__dirname + '/downloads/', { recursive: true });
+            }
             const file = __dirname + '/downloads/' + result.toString()
             res.download(file); // Set disposition and send it.
       });

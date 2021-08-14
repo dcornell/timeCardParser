@@ -2,6 +2,7 @@ import csv
 from openpyxl import Workbook
 import sys
 from datetime import datetime
+import os
 
 # TODO:
 # Flag if over 8 hours on a job
@@ -157,6 +158,10 @@ def main():
     # pipe filename back to node js via standard output
     print(fileName)
 
+    # Create directory if it doesn't exist
+    if not os.path.exists(os.path.join(os.getcwd(), filePath)) :
+        os.mkdir(os.path.join(os.getcwd(), filePath))
+        
     # Save file
     workbook.save(filename=fileDest)
 
