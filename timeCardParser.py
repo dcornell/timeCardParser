@@ -62,7 +62,7 @@ def main():
             day = day.split(' ')
             day = day[0]
 
-            jobId = row['number']
+            jobId = row['job_number']
             if not jobId:
                 jobId = "missing_jobid"
 
