@@ -4,6 +4,10 @@ import sys
 from datetime import datetime
 import os
 
+def die(message):
+    print(message)
+    sys.exit(1)
+
 # TODO:
 # Flag if over 8 hours on a job
 class TimeSheet(object):
@@ -44,17 +48,46 @@ def main():
     # Create instance of TimeSheet class to track per employee TimeCards
     timeSheet = TimeSheet();
 
+    uploadedFilename = sys.argv[1]
+
     # Build path to uploaded file. Node passes name of uploaded file as first argument
-    fileToOpen = 'routes/uploads/' + sys.argv[1]
+    fileToOpen = 'routes/uploads/' + uploadedFilename
+
+    if not os.path.isfile(fileToOpen):
+        # Check for file in expected location. i.e. routes/uploads/<filename>
+        die('Upload failed {}' .format(uploadedFilename))
+    else:
+        # Found file at expect path
+        # basic 'check' for csv
+        if not uploadedFilename.split('.')[-1] == 'csv':
+            die('Expected csv file but got {} file' .format(uploadedFilename.split('.')[-1]))
+
+    # list of keys python expects in csv
+    csvKeys = ['tech', 'clock_in', 'job_number', 'total_time_minutes']
 
     with open(fileToOpen, encoding="utf8", mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         line_count = 0
         for row in csv_reader:
+
+            # Check key's if they exists
+            # Assume if keys are in row 0, they are in all rows
+            if (line_count == 0):
+                missingKeys = ''
+                for searchKey in csvKeys:
+                    if not searchKey in row.keys():
+                        missingKeys += searchKey + ' '
+
+                if missingKeys:
+                    die('Uploaded CSV missing the following columns: {}' .format(missingKeys))
+
             tc_found = False
             workDate_found = False
 
             employeeName = row['tech']
+            # check if blank, assign default name
+            if not employeeName:
+                employeeName = "missing_name"
 
             day = row['clock_in']
             if not day:
@@ -71,10 +104,6 @@ def main():
                 minsWorked = 0
             else:
                 minsWorked = int(minsWorked)/60
-
-            # check if blank, assign default name
-            if not employeeName:
-                employeeName = "missing_name"
 
             if timeSheet.timeCards.get(employeeName) == None:
                 job = {jobId: minsWorked}
@@ -164,6 +193,9 @@ def main():
         
     # Save file
     workbook.save(filename=fileDest)
+
+    # return 'success'
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()

@@ -60,15 +60,18 @@ router.post('/', function (req, res, next){
         
       // Call timeCardParser with options
       PythonShell.run('timeCardParser.py', options, function (err, result){
-            if (err) throw err;
-            // result is an array consisting of messages collected 
-            //during execution of script.
-            if (!(fs.existsSync(__dirname + '/downloads/'))) {
-              // Create directory
-              fs.mkdirSync(__dirname + '/downloads/', { recursive: true });
-            }
-            const file = __dirname + '/downloads/' + result.toString()
-            res.download(file); // Set disposition and send it.
+            if (err) {
+              res.render('error', { title: 'TimeCard Parser', message: result.toString() });
+            } else {
+              // result is an array consisting of messages collected 
+              //during execution of script.
+              if (!(fs.existsSync(__dirname + '/downloads/'))) {
+                // Create directory
+                fs.mkdirSync(__dirname + '/downloads/', { recursive: true });
+              }
+              const file = __dirname + '/downloads/' + result.toString()
+              res.download(file); // Set disposition and send it.
+            }         
       });
 
     });

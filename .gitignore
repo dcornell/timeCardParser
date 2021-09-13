@@ -3,4 +3,5 @@ build
 npm-debug.log
 .env
 .DS_Store
-AmazonEC2Instance-TimeCardParser.pem
+*.pem
+*.ppk

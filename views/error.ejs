@@ -1,3 +1,21 @@
-<h1><%= message %></h1>
-<h2><%= error.status %></h2>
-<pre><%= error.stack %></pre>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel='stylesheet' href='/stylesheets/bootstrap.min.css' />
+  </head>
+  <body>
+    <div class="container">
+      <h1><%= title %></h1>
+      <div class="row">
+        <div class="alert alert-danger" role="alert">
+	      <%= message %>
+	    </div>
+      </div>
+      <div class="row">
+	    <img src="https://i.imgur.com/6TONvUb.gif" alt="We must not go there">
+      </div>
+    </div>
+  </body>
+</html>
