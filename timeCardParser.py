@@ -3,6 +3,7 @@ from openpyxl import Workbook
 import sys
 from datetime import datetime
 import os
+from collections import OrderedDict
 
 def die(message):
     print(message)
@@ -13,7 +14,7 @@ def die(message):
 class TimeSheet(object):
 
     # High level dictionary to track employee work
-    timeCards = {}
+    timeCards = OrderedDict()
 
     # TODO: Use schema to validate dictionary
 
@@ -35,14 +36,24 @@ class TimeSheet(object):
                     totalMins += (jobs[minsWorked])
         return totalMins
 
-    # Function to pretty print dictionary
-    def pretty(d, indent=0):
-       for key, value in d.items():
-          print('\t' * indent + str(key))
-          if isinstance(value, dict):
-             pretty(value, indent+1)
-          else:
-             print('\t' * (indent+1) + str(value))
+# Function to pretty print dictionary
+def pretty(d, indent=0):
+   for key, value in d.items():
+      print('\t' * indent + str(key))
+      if isinstance(value, dict):
+         pretty(value, indent+1)
+      else:
+         print('\t' * (indent+1) + str(value))
+
+
+# Parsing function to enable sorting;
+# if clock_in data is an empty string, treat it as 1/1/2020
+def getDate(x):
+        if x == '':
+            return '1/1/2020'
+        else:
+            return x
+
 def main():
 
     # Create instance of TimeSheet class to track per employee TimeCards
@@ -63,12 +74,15 @@ def main():
             die('Expected csv file but got {} file' .format(uploadedFilename.split('.')[-1]))
 
     # list of keys python expects in csv
-    csvKeys = ['tech', 'clock_in', 'job_number', 'total_time_minutes']
+    csvKeys = ['tech', 'clock_in', 'job_number', 'total_time_minutes', 'company']
 
     with open(fileToOpen, encoding="utf8", mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
+        # Sort CSV based on date
+        #sorted_csv = sorted(csv_reader, key=lambda row: (datetime.strptime(row['clock_in'].split(' ')[0], "%m/%d/%Y")))
+        sorted_csv = sorted(csv_reader, key=lambda row: getDate(row['clock_in']))
         line_count = 0
-        for row in csv_reader:
+        for row in sorted_csv:
 
             # Check key's if they exists
             # Assume if keys are in row 0, they are in all rows
@@ -81,9 +95,6 @@ def main():
                 if missingKeys:
                     die('Uploaded CSV missing the following columns: {}' .format(missingKeys))
 
-            tc_found = False
-            workDate_found = False
-
             employeeName = row['tech']
             # check if blank, assign default name
             if not employeeName:
@@ -91,13 +102,20 @@ def main():
 
             day = row['clock_in']
             if not day:
-                day = "0/0/2020"
+                day = "1/1/2020"
             day = day.split(' ')
             day = day[0]
+
+
+            companyId = row['company']
+            if not companyId:
+                companyId = "missing_company_id"
 
             jobId = row['job_number']
             if not jobId:
                 jobId = "missing_jobid"
+
+            jobId = companyId + ' ' + jobId        
 
             minsWorked = row['total_time_minutes']
             if not minsWorked:
@@ -139,6 +157,8 @@ def main():
 
             line_count += 1
 
+    #pretty(timeSheet.timeCards)
+
     # Create xlsx file with a sheet for each employee
     workbook = Workbook()
 
@@ -146,28 +166,51 @@ def main():
     defaultSheet=workbook['Sheet']
     workbook.remove(defaultSheet)
 
+    employee_jobid_to_row_lut = {}
+
     for employee in timeSheet.timeCards:
         activeSheet = workbook.create_sheet(employee)
         activeSheet.cell(column=1, row=1, value="Employee Name:")
         # Get Column String from column int
-        activeSheet.column_dimensions[str(chr(64 + 1))].width = 14
+        #activeSheet.column_dimensions[str(chr(64 + 1))].width = 14
         activeSheet.cell(column=2, row=1, value=employee)
         activeSheet.cell(column=1, row=2, value="Job ID:")
         col = 2
-        row = 3
+        row = 4
         for day in timeSheet.timeCards[employee]:
             # Write Dates across columns
             activeSheet.cell(column=col, row=2, value=day)
             # Get Column String from column int
-            activeSheet.column_dimensions[str(chr(64 + col))].width = 10
+            #activeSheet.column_dimensions[str(chr(64 + col))].width = 10
             for jobDict in timeSheet.timeCards[employee][day]:
                 for jobId, minsWorked in jobDict.items():
+                    # Check if employee has worked at this jobid preivously,
+                    # if so, write minsWorked on same row
+                    temp = row;
+                    inc = 1
+
+                    # Check if this employee has an entry in our lookup table
+                    if employee_jobid_to_row_lut.get(employee) == None:
+                        jobid_to_row = {jobId: row}
+                        employee_jobid_to_row = {employee: jobid_to_row}
+                        employee_jobid_to_row_lut.update(employee_jobid_to_row)
+
+                    # Check if employee already has worked on this job    
+                    elif employee_jobid_to_row_lut[employee].get(jobId) == None:
+                        employee_jobid_to_row_lut[employee].update({jobId: row})
+
+                    # Employee worked at this job before. Lookup row number
+                    else:
+                        row = employee_jobid_to_row_lut[employee][jobId];
+                        inc = 0
+
                     # Write Job ID
                     activeSheet.cell(column=1, row=row, value=jobId)
                     activeSheet.cell(column=col, row=row, value=round(minsWorked, 2))
-                    row += 1
+                    row = temp
+                    row += inc
             col += 1
-        col -= 2
+        col -= 2 
         row += 5
         activeSheet.cell(column=col, row=row, value="Total Hours:")
         col += 1
